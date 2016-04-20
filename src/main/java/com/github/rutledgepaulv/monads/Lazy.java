@@ -4,7 +4,7 @@ import com.github.rutledgepaulv.monads.supporting.SupportsOptional;
 import com.github.rutledgepaulv.monads.supporting.SupportsStream;
 
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -29,18 +29,14 @@ public final class Lazy<T> implements Supplier<T>, SupportsOptional<T>, Supports
      * @return Create a pre-evaluated lazy of null value.
      */
     public static <S> Lazy<S> empty() {
-        Lazy<S> result = new Lazy<>(true);
-        result.value = null;
-        return result;
+        return new Lazy<>();
     }
 
     /**
      * @return Create a pre-evaluated lazy of the given value.
      */
     public static <S> Lazy<S> of(S value) {
-        Lazy<S> result = new Lazy<>(true);
-        result.value = value;
-        return result;
+        return new Lazy<>(value);
     }
 
     /**
@@ -50,22 +46,28 @@ public final class Lazy<T> implements Supplier<T>, SupportsOptional<T>, Supports
      *         dereferenced after first execution.
      */
     public static <S> Lazy<S> of(Supplier<S> supplier) {
-        Lazy<S> result = new Lazy<>(false);
-        result.supplier = supplier;
-        return result;
+        return new Lazy<>(supplier);
     }
 
 
 
 
+    private final AtomicReference<T> value;
+    private final AtomicReference<Supplier<T>> supplier;
 
+    private Lazy(T value) {
+        this.value = new AtomicReference<>(value);
+        this.supplier = new AtomicReference<>();
+    }
 
-    private T value;
-    private Supplier<T> supplier;
-    private final AtomicBoolean hasExecuted;
+    private Lazy(Supplier<T> supplier) {
+        this.supplier = new AtomicReference<>(supplier);
+        this.value = new AtomicReference<>();
+    }
 
-    private Lazy(boolean hasExecuted) {
-        this.hasExecuted = new AtomicBoolean(hasExecuted);
+    private Lazy() {
+        this.supplier = new AtomicReference<>();
+        this.value = new AtomicReference<>();
     }
 
 
@@ -97,11 +99,11 @@ public final class Lazy<T> implements Supplier<T>, SupportsOptional<T>, Supports
      */
     @Override
     public final T get() {
-        if(hasExecuted.compareAndSet(false, true)) {
-            this.value = supplier.get();
-            this.supplier = null;
+        Supplier<T> supplier = this.supplier.get();
+        if(supplier != null && this.value.compareAndSet(null, supplier.get())) {
+            this.supplier.compareAndSet(supplier, null);
         }
-        return this.value;
+        return this.value.get();
     }
 
     /**
