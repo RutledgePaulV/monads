@@ -1,13 +1,15 @@
 package com.github.rutledgepaulv.monads;
 
-import com.github.rutledgepaulv.monads.supporting.SupportsOptional;
-import com.github.rutledgepaulv.monads.supporting.SupportsStream;
+import com.github.rutledgepaulv.monads.supporting.ToOptional;
+import com.github.rutledgepaulv.monads.supporting.ToStream;
 
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+
+import static java.util.function.Function.identity;
 
 /**
  * A lazy evaluation monad that wraps a supplying function for one-time execution
@@ -23,7 +25,41 @@ import java.util.stream.Stream;
  *
  * @param <T> The result type contained by the monad.
  */
-public final class Lazy<T> implements Supplier<T>, SupportsOptional<T>, SupportsStream<T> {
+public final class Lazy<T> implements Supplier<T>, ToOptional<T>, ToStream<T> {
+
+
+    private static <S, T extends Lazy<?>> Lazy<S> flatten(Lazy<T> nested, Function<? super T, Lazy<S>> func) {
+        return nested.stream().map(func).findFirst().orElseGet(Lazy::empty);
+    }
+
+    public static <S> Lazy<S> flatten2(Lazy<Lazy<S>> nested) {
+        return flatten(nested, identity());
+    }
+
+    public static <S> Lazy<S> flatten3(Lazy<Lazy<Lazy<S>>> nested) {
+        return flatten(nested, Lazy::flatten2);
+    }
+
+    public static <S> Lazy<S> flatten4(Lazy<Lazy<Lazy<Lazy<S>>>> nested) {
+        return flatten(nested, Lazy::flatten3);
+    }
+
+    public static <S> Lazy<S> flatten5(Lazy<Lazy<Lazy<Lazy<Lazy<S>>>>> nested) {
+        return flatten(nested, Lazy::flatten4);
+    }
+
+    public static <S> Lazy<S> flatten6(Lazy<Lazy<Lazy<Lazy<Lazy<Lazy<S>>>>>> nested) {
+        return flatten(nested, Lazy::flatten5);
+    }
+
+    public static <S> Lazy<S> flatten7(Lazy<Lazy<Lazy<Lazy<Lazy<Lazy<Lazy<S>>>>>>> nested) {
+        return flatten(nested, Lazy::flatten6);
+    }
+
+    public static <S> Lazy<S> flatten8(Lazy<Lazy<Lazy<Lazy<Lazy<Lazy<Lazy<Lazy<S>>>>>>>> nested) {
+        return flatten(nested, Lazy::flatten7);
+    }
+
 
     /**
      * @return Create a pre-evaluated lazy of null value.
@@ -79,7 +115,7 @@ public final class Lazy<T> implements Supplier<T>, SupportsOptional<T>, Supports
      * @return The composed lazy
      */
     public final <S> Lazy<S> map(Function<? super T,? extends S> mapper) {
-        return of(() -> mapper.apply(get()));
+        return of(() -> optional().map(mapper).orElse(null));
     }
 
     /**
@@ -90,8 +126,8 @@ public final class Lazy<T> implements Supplier<T>, SupportsOptional<T>, Supports
      * @param mapper The mapping function.
      * @return The composed lazy
      */
-    public final <S> Lazy<S> flatMap(Function<? super T, Lazy<? extends S>> mapper) {
-        return of(() -> mapper.apply(get()).get());
+    public final <S> Lazy<S> flatMap(Function<? super T, Lazy<S>> mapper) {
+        return of(() -> optional().map(mapper).map(Lazy::get).orElse(null));
     }
 
     /**
@@ -112,7 +148,9 @@ public final class Lazy<T> implements Supplier<T>, SupportsOptional<T>, Supports
      */
     @Override
     public final Stream<T> stream() {
-        return Stream.of(this).map(Supplier::get);
+        return Stream.of(this).map(Lazy::optional)
+                .filter(Optional::isPresent)
+                .map(Optional::get);
     }
 
     /**
