@@ -3,13 +3,14 @@ package com.github.rutledgepaulv.monads;
 import com.github.rutledgepaulv.monads.supporting.ToOptional;
 import com.github.rutledgepaulv.monads.supporting.ToStream;
 
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Proxy;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import static java.util.function.Function.identity;
+import static java.util.function.Function.*;
 
 /**
  * A lazy evaluation monad that wraps a supplying function for one-time execution
@@ -25,6 +26,7 @@ import static java.util.function.Function.identity;
  *
  * @param <T> The result type contained by the monad.
  */
+@SuppressWarnings("unchecked")
 public final class Lazy<T> implements Supplier<T>, ToOptional<T>, ToStream<T> {
 
     /**
@@ -47,8 +49,29 @@ public final class Lazy<T> implements Supplier<T>, ToOptional<T>, ToStream<T> {
      *         long as the lazy is referenced. The generating function is
      *         dereferenced after first execution.
      */
-    public static <S> Lazy<S> of(Supplier<S> supplier) {
+    public static <S> Lazy<S> of(Supplier<? extends S> supplier) {
         return new Lazy<>(supplier);
+    }
+
+    /**
+     * Proxies a value with lazy initialization. Requires that the provided type
+     * be an interface.
+     *
+     * @param nterface The interface to proxy.
+     * @param supplier The supplier to make lazy for generation of the value.
+     * @param <S> The type of the result.
+     * @return A satisfied interface whose underlying value won't be initialized
+     *         until first use.
+     */
+    public static <S> S proxy(Class<? extends S> nterface, Supplier<? extends S> supplier) {
+        Objects.requireNonNull(nterface, "nterface is null");
+        Objects.requireNonNull(supplier, "supplier is null");
+        if (!nterface.isInterface()) {
+            throw new IllegalArgumentException("type must be an interface");
+        }
+        final Lazy<? extends S> lazy = Lazy.of(supplier);
+        final InvocationHandler handler = (proxy, method, args) -> method.invoke(lazy.get(), args);
+        return (S) Proxy.newProxyInstance(nterface.getClassLoader(), new Class<?>[] { nterface }, handler);
     }
 
     /**
@@ -129,22 +152,20 @@ public final class Lazy<T> implements Supplier<T>, ToOptional<T>, ToStream<T> {
     }
 
 
-    private final AtomicReference<T> value;
-    private final AtomicReference<Supplier<T>> supplier;
+    private volatile T value;
+    private transient volatile Supplier<? extends T> supplier;
 
     private Lazy() {
-        this.supplier = new AtomicReference<>();
-        this.value = new AtomicReference<>();
+        this.supplier = null;
     }
 
     private Lazy(T value) {
-        this.value = new AtomicReference<>(value);
-        this.supplier = new AtomicReference<>();
+        this.value = value;
+        this.supplier = null;
     }
 
-    private Lazy(Supplier<T> supplier) {
-        this.supplier = new AtomicReference<>(supplier);
-        this.value = new AtomicReference<>();
+    private Lazy(Supplier<? extends T> supplier) {
+        this.supplier = supplier;
     }
 
 
@@ -176,11 +197,15 @@ public final class Lazy<T> implements Supplier<T>, ToOptional<T>, ToStream<T> {
      */
     @Override
     public final T get() {
-        Supplier<T> supplier = this.supplier.get();
-        if(supplier != null && this.value.compareAndSet(null, supplier.get())) {
-            this.supplier.compareAndSet(supplier, null);
+        if(supplier != null) {
+            synchronized (this){
+                if(supplier != null) {
+                    value = supplier.get();
+                    supplier = null;
+                }
+            }
         }
-        return this.value.get();
+        return value;
     }
 
     /**

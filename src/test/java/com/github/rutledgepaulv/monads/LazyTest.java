@@ -2,13 +2,25 @@ package com.github.rutledgepaulv.monads;
 
 import org.junit.Test;
 
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import static org.junit.Assert.*;
 
 public class LazyTest {
+
+
+    @Test
+    public void proxy() {
+        List<?> list = Lazy.proxy(List.class, ArrayList::new);
+        assertNotNull(list);
+        assertEquals(0, list.size());
+
+        CharSequence sequence = Lazy.proxy(CharSequence.class, () -> "testing" + " " + "lots of things");
+        assertNotNull(sequence);
+        assertEquals("testing lots of things", sequence.toString());
+    }
 
 
     @Test
@@ -141,6 +153,17 @@ public class LazyTest {
 
         result = flattened.get();
         assertEquals("1", result);
+        assertEquals(1, counter.get());
+
+        counter.set(0);
+        CharSequence sequence = Lazy.proxy(CharSequence.class, countingSupplier);
+        assertNotNull(sequence);
+        assertEquals(0, counter.get());
+
+        assertEquals("1", sequence.toString());
+        assertEquals(1, counter.get());
+
+        assertEquals(1, sequence.length());
         assertEquals(1, counter.get());
     }
 
