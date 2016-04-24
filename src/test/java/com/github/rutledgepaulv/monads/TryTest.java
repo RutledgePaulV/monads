@@ -2,7 +2,7 @@ package com.github.rutledgepaulv.monads;
 
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public class TryTest {
 
@@ -31,9 +31,5 @@ public class TryTest {
         Try<Try<Try<Try<Try<Try<Try<Try<String>>>>>>>> try8 = Try.of(() -> try7);
         assertEquals("badgers", Try.flatten8(try8).get());
     }
-
-
-
-
 
 }

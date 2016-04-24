@@ -27,40 +27,6 @@ import static java.util.function.Function.identity;
  */
 public final class Lazy<T> implements Supplier<T>, ToOptional<T>, ToStream<T> {
 
-
-    private static <S, T extends Lazy<?>> Lazy<S> flatten(Lazy<T> nested, Function<? super T, Lazy<S>> func) {
-        return nested.stream().map(func).findFirst().orElseGet(Lazy::empty);
-    }
-
-    public static <S> Lazy<S> flatten2(Lazy<Lazy<S>> nested) {
-        return flatten(nested, identity());
-    }
-
-    public static <S> Lazy<S> flatten3(Lazy<Lazy<Lazy<S>>> nested) {
-        return flatten(nested, Lazy::flatten2);
-    }
-
-    public static <S> Lazy<S> flatten4(Lazy<Lazy<Lazy<Lazy<S>>>> nested) {
-        return flatten(nested, Lazy::flatten3);
-    }
-
-    public static <S> Lazy<S> flatten5(Lazy<Lazy<Lazy<Lazy<Lazy<S>>>>> nested) {
-        return flatten(nested, Lazy::flatten4);
-    }
-
-    public static <S> Lazy<S> flatten6(Lazy<Lazy<Lazy<Lazy<Lazy<Lazy<S>>>>>> nested) {
-        return flatten(nested, Lazy::flatten5);
-    }
-
-    public static <S> Lazy<S> flatten7(Lazy<Lazy<Lazy<Lazy<Lazy<Lazy<Lazy<S>>>>>>> nested) {
-        return flatten(nested, Lazy::flatten6);
-    }
-
-    public static <S> Lazy<S> flatten8(Lazy<Lazy<Lazy<Lazy<Lazy<Lazy<Lazy<Lazy<S>>>>>>>> nested) {
-        return flatten(nested, Lazy::flatten7);
-    }
-
-
     /**
      * @return Create a pre-evaluated lazy of null value.
      */
@@ -85,11 +51,91 @@ public final class Lazy<T> implements Supplier<T>, ToOptional<T>, ToStream<T> {
         return new Lazy<>(supplier);
     }
 
+    /**
+     * Flattens a 2-lazy into a 1-lazy.
+     *
+     * @param nested The nested lazy
+     * @param <S> The type contained by the innermost lazy.
+     * @return The flattened lazy.
+     */
+    public static <S> Lazy<S> flatten2(Lazy<Lazy<S>> nested) {
+        return flatten(nested, identity());
+    }
 
+    /**
+     * Flattens a 3-lazy into a 1-lazy.
+     *
+     * @param nested The nested lazy
+     * @param <S> The type contained by the innermost lazy.
+     * @return The flattened lazy.
+     */
+    public static <S> Lazy<S> flatten3(Lazy<Lazy<Lazy<S>>> nested) {
+        return flatten(nested, Lazy::flatten2);
+    }
+
+    /**
+     * Flattens a 4-lazy into a 1-lazy.
+     *
+     * @param nested The nested lazy
+     * @param <S> The type contained by the innermost lazy.
+     * @return The flattened lazy.
+     */
+    public static <S> Lazy<S> flatten4(Lazy<Lazy<Lazy<Lazy<S>>>> nested) {
+        return flatten(nested, Lazy::flatten3);
+    }
+
+    /**
+     * Flattens a 5-lazy into a 1-lazy.
+     *
+     * @param nested The nested lazy
+     * @param <S> The type contained by the innermost lazy.
+     * @return The flattened lazy.
+     */
+    public static <S> Lazy<S> flatten5(Lazy<Lazy<Lazy<Lazy<Lazy<S>>>>> nested) {
+        return flatten(nested, Lazy::flatten4);
+    }
+
+    /**
+     * Flattens a 6-lazy into a 1-lazy.
+     *
+     * @param nested The nested lazy
+     * @param <S> The type contained by the innermost lazy.
+     * @return The flattened lazy.
+     */
+    public static <S> Lazy<S> flatten6(Lazy<Lazy<Lazy<Lazy<Lazy<Lazy<S>>>>>> nested) {
+        return flatten(nested, Lazy::flatten5);
+    }
+
+    /**
+     * Flattens a 7-lazy into a 1-lazy.
+     *
+     * @param nested The nested lazy
+     * @param <S> The type contained by the innermost lazy.
+     * @return The flattened lazy.
+     */
+    public static <S> Lazy<S> flatten7(Lazy<Lazy<Lazy<Lazy<Lazy<Lazy<Lazy<S>>>>>>> nested) {
+        return flatten(nested, Lazy::flatten6);
+    }
+
+    /**
+     * Flattens a 8-lazy into a 1-lazy.
+     *
+     * @param nested The nested lazy
+     * @param <S> The type contained by the innermost lazy.
+     * @return The flattened lazy.
+     */
+    public static <S> Lazy<S> flatten8(Lazy<Lazy<Lazy<Lazy<Lazy<Lazy<Lazy<Lazy<S>>>>>>>> nested) {
+        return flatten(nested, Lazy::flatten7);
+    }
 
 
     private final AtomicReference<T> value;
     private final AtomicReference<Supplier<T>> supplier;
+
+    private Lazy() {
+        this.supplier = new AtomicReference<>();
+        this.value = new AtomicReference<>();
+    }
 
     private Lazy(T value) {
         this.value = new AtomicReference<>(value);
@@ -98,11 +144,6 @@ public final class Lazy<T> implements Supplier<T>, ToOptional<T>, ToStream<T> {
 
     private Lazy(Supplier<T> supplier) {
         this.supplier = new AtomicReference<>(supplier);
-        this.value = new AtomicReference<>();
-    }
-
-    private Lazy() {
-        this.supplier = new AtomicReference<>();
         this.value = new AtomicReference<>();
     }
 
@@ -163,4 +204,7 @@ public final class Lazy<T> implements Supplier<T>, ToOptional<T>, ToStream<T> {
         return Optional.ofNullable(get());
     }
 
+    private static <S, T extends Lazy<?>> Lazy<S> flatten(Lazy<T> nested, Function<? super T, Lazy<S>> func) {
+        return nested.stream().map(func).findFirst().orElseGet(Lazy::empty);
+    }
 }
