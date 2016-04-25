@@ -387,18 +387,6 @@ public abstract class Try<T> implements ToOptional<T>, ToStream<T> {
     orElseThrowChecked() throws Exception;
 
     /**
-     * Return the success value, or else throw the provided exception
-     * instead of whatever exception is contained in the failed Try.
-     *
-     * @param throwable The exception to throw if the Try is failed.
-     * @param <E> The type of the exception to throw
-     * @return The success value contained within the Try.
-     * @throws E The provided exception if the Try was failed.
-     */
-    public abstract <E extends Exception> T
-    orElseThrow(E throwable) throws E;
-
-    /**
      * Return the success value, or else throw the the first exception
      * generated from the provided supplier instead of whatever
      * exception is contained in the failed Try.
@@ -412,7 +400,7 @@ public abstract class Try<T> implements ToOptional<T>, ToStream<T> {
      * @throws E The provided exception if the Try was failed.
      */
     public abstract <E extends Exception> T
-    orElseThrow(Supplier<? extends E> exceptionSupplier) throws E;
+    orElseThrow(Supplier<E> exceptionSupplier) throws E;
 
     /**
      * If the original Try was failed, optionally provide another
@@ -584,7 +572,7 @@ public abstract class Try<T> implements ToOptional<T>, ToStream<T> {
         private final S value;
 
         private Success(S value) {
-            this.value = Objects.requireNonNull(value, "You cannot capture a null value.");
+            this.value = value;
         }
 
         @Override
@@ -654,17 +642,12 @@ public abstract class Try<T> implements ToOptional<T>, ToStream<T> {
         }
 
         @Override
-        public final <E extends Exception> S orElseThrow(E throwable) throws E {
-            return get();
-        }
-
-        @Override
         public final <E extends Exception> Try<S> orElseTry(CheckedSupplier<? extends S, E> func) {
             return this;
         }
 
         @Override
-        public final <X extends Exception> S orElseThrow(Supplier<? extends X> exceptionSupplier) throws X {
+        public final <X extends Exception> S orElseThrow(Supplier<X> exceptionSupplier) throws X {
             return get();
         }
 
@@ -842,11 +825,6 @@ public abstract class Try<T> implements ToOptional<T>, ToStream<T> {
         }
 
         @Override
-        public final <E extends Exception> S orElseThrow(E throwable) throws E {
-            throw throwable;
-        }
-
-        @Override
         public final <E extends Exception> Try<S> orElseTry(CheckedSupplier<? extends S, E> func) {
             try {
                 return success(func.get());
@@ -856,7 +834,7 @@ public abstract class Try<T> implements ToOptional<T>, ToStream<T> {
         }
 
         @Override
-        public final <X extends Exception> S orElseThrow(Supplier<? extends X> exceptionSupplier) throws X {
+        public final <X extends Exception> S orElseThrow(Supplier<X> exceptionSupplier) throws X {
             throw exceptionSupplier.get();
         }
 

@@ -24,6 +24,8 @@ import static java.util.function.Function.*;
  * has been executed just once the value will be cached and the generating function
  * dereferenced.
  *
+ * Thread safe.
+ *
  * @param <T> The result type contained by the monad.
  */
 @SuppressWarnings("unchecked")
