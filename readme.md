@@ -13,7 +13,7 @@ Basic useful monads missing from Java.
 private Lazy<UserService> userService = Lazy.of(UserServiceImpl::new);
 
 // create a proxy for the interface that delegates to a lazy instance.
-// this means that hte instance only gets created once you call a method on the proxy.
+// this means that the instance only gets created once you call a method on the proxy.
 private UserService userService = Lazy.proxy(UserService.class, UserServiceImpl::new);
 ```
 
