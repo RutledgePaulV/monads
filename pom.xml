@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>monads</artifactId>
-    <version>0.6-SNAPSHOT</version>
+    <version>0.5</version>
 
     <name>monads</name>
     <url>https://github.com/rutledgepaulv/monads</url>
