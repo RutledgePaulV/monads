@@ -216,7 +216,7 @@ public final class Lazy<T> implements Supplier<T>, ToOptional<T>, ToStream<T> {
      */
     @Override
     public final Stream<T> stream() {
-        return Stream.of(this).map(Lazy::optional)
+        return Stream.of(this).parallel().map(Lazy::optional)
                 .filter(Optional::isPresent)
                 .map(Optional::get);
     }
